@@ -17,7 +17,7 @@ import (
 type LoadBalancer struct {
 	backends []*url.URL
 	counter  uint64
-	timeout  time.Duration
+	Timeout  time.Duration
 	client   *http.Client
 }
 
@@ -64,7 +64,7 @@ func New(backends []string, timeout *time.Duration) (*LoadBalancer, error) {
 	return &LoadBalancer{
 		backends: parsedURLs,
 		client:   client,
-		timeout:  *timeout,
+		Timeout:  *timeout,
 	}, nil
 }
 
@@ -79,7 +79,7 @@ func (lb *LoadBalancer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	target := lb.getNextBackend()
 
 	// Apply timeout to backend requests to avoid hanging
-	ctx, cancel := context.WithTimeout(r.Context(), lb.timeout)
+	ctx, cancel := context.WithTimeout(r.Context(), lb.Timeout)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, r.Method, target.String()+r.RequestURI, r.Body)

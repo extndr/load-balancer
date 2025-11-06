@@ -1,4 +1,4 @@
-module github.com/extndr/loadBalancer
+module github.com/extndr/load-balancer
 
 go 1.25.1
 

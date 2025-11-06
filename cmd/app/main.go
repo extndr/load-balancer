@@ -3,9 +3,9 @@ package main
 import (
 	log "github.com/sirupsen/logrus"
 
-	"github.com/extndr/loadBalancer/internal/config"
-	"github.com/extndr/loadBalancer/internal/lb"
-	"github.com/extndr/loadBalancer/internal/server"
+	"github.com/extndr/load-balancer/internal/config"
+	"github.com/extndr/load-balancer/internal/lb"
+	"github.com/extndr/load-balancer/internal/server"
 	"github.com/joho/godotenv"
 )
 

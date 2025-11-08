@@ -1,0 +1,30 @@
+services:
+  backend1:
+    image: hashicorp/http-echo:latest
+    command: ["-text=Backend 1"]
+    ports:
+      - "8081:5678"
+
+  backend2:
+    image: hashicorp/http-echo:latest
+    command: ["-text=Backend 2"]
+    ports:
+      - "8082:5678"
+
+  backend3:
+    image: hashicorp/http-echo:latest
+    command: ["-text=Backend 3"]
+    ports:
+      - "8083:5678"
+
+  loadbalancer:
+    build: ../
+    ports:
+      - "8080:8080"
+    environment:
+      - BACKENDS=http://backend1:5678,http://backend2:5678,http://backend3:5678
+      - PORT=8080
+    depends_on:
+      - backend1
+      - backend2
+      - backend3

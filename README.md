@@ -1,6 +1,8 @@
 # load-balancer
 
-**A simple HTTP load balancer in Go using round-robin algorithm**
+**A simple HTTP load balancer in Go using round-robin algorithm**.
+
+![Round Robin Load Balancing](./demo/round-robin.gif)
 
 ## Features
 

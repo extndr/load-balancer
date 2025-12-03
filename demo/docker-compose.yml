@@ -17,13 +17,13 @@ services:
     ports:
       - "8083:5678"
 
-  loadbalancer:
+  balancer:
     build: ../
     ports:
-      - "8080:8080"
+      - "1234:1234"
     environment:
+      - PORT=1234
       - BACKENDS=http://backend1:5678,http://backend2:5678,http://backend3:5678
-      - PORT=8080
     depends_on:
       - backend1
       - backend2

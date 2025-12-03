@@ -15,8 +15,7 @@ import (
 )
 
 type Proxy struct {
-	Client  *http.Client
-	Timeout time.Duration
+	Client *http.Client
 }
 
 func NewProxy(timeout time.Duration, transportConfig config.HTTPTransportConfig) *Proxy {
@@ -36,10 +35,7 @@ func (p *Proxy) DoRequest(b *pool.Backend, r *http.Request) (*http.Response, err
 		RawQuery: r.URL.RawQuery,
 	}
 
-	ctx, cancel := context.WithTimeout(r.Context(), p.Timeout)
-	defer cancel()
-
-	req, err := http.NewRequestWithContext(ctx, r.Method, target.String(), r.Body)
+	req, err := http.NewRequest(r.Method, target.String(), r.Body)
 	if err != nil {
 		log.Errorf("failed to create request to %s: %v", b.URL.Host, err)
 		return nil, err
@@ -50,7 +46,7 @@ func (p *Proxy) DoRequest(b *pool.Backend, r *http.Request) (*http.Response, err
 	resp, err := p.Client.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
-			log.Warnf("proxy timeout: backend %s did not respond within %v", b.URL.Host, p.Timeout)
+			log.Warnf("proxy timeout: backend %s did not respond within %v", b.URL.Host, p.Client.Timeout)
 		} else {
 			log.Errorf("proxy request to %s failed: %v", b.URL.Host, err)
 		}

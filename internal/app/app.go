@@ -77,6 +77,18 @@ func (a *App) Start() error {
 	return <-a.errCh
 }
 
+func (a *App) Stop(ctx context.Context) error {
+	a.healthService.Stop()
+
+	if err := a.server.Shutdown(ctx); err != nil {
+		log.Errorf("server shutdown error: %v", err)
+		return err
+	}
+
+	log.Infof("server gracefully shutdown")
+	return nil
+}
+
 func (a *App) waitForShutdown() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
@@ -87,14 +99,9 @@ func (a *App) waitForShutdown() {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	a.healthService.Stop()
-	log.Infof("health service stopped")
-
-	if err := a.server.Shutdown(ctx); err != nil {
-		log.Errorf("server shutdown error: %v", err)
+	if err := a.Stop(ctx); err != nil {
 		a.errCh <- err
 	} else {
-		log.Infof("server gracefully shutdown")
 		a.errCh <- nil
 	}
 }

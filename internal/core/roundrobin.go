@@ -19,6 +19,9 @@ func NewRoundRobin(backends *pool.Pool) *RoundRobin {
 
 func (rr *RoundRobin) Next() *pool.Backend {
 	alive := rr.backends.AliveBackends()
+	if len(alive) == 0 {
+		return nil
+	}
 	idx := atomic.AddUint64(&rr.counter, 1) - 1
 	selected := alive[idx%uint64(len(alive))]
 	return selected

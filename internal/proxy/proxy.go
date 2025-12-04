@@ -35,7 +35,7 @@ func (p *Proxy) DoRequest(b *pool.Backend, r *http.Request) (*http.Response, err
 		RawQuery: r.URL.RawQuery,
 	}
 
-	req, err := http.NewRequest(r.Method, target.String(), r.Body)
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, target.String(), r.Body)
 	if err != nil {
 		log.Errorf("failed to create request to %s: %v", b.URL.Host, err)
 		return nil, err

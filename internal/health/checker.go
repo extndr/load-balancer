@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/extndr/load-balancer/internal/pool"
+	"github.com/extndr/load-balancer/internal/backend"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -20,7 +20,7 @@ func NewChecker(timeout time.Duration) *Checker {
 	}
 }
 
-func (c *Checker) Check(b *pool.Backend) bool {
+func (c *Checker) Check(b *backend.Backend) bool {
 	url := b.URL.String()
 	resp, err := c.client.Get(url)
 	if err != nil {

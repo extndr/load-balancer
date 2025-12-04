@@ -1,16 +1,12 @@
-package core
+package balancer
 
 import (
 	"net/http"
 
-	"github.com/extndr/load-balancer/internal/pool"
+	"github.com/extndr/load-balancer/internal/backend"
 	"github.com/extndr/load-balancer/internal/proxy"
 	log "github.com/sirupsen/logrus"
 )
-
-type Strategy interface {
-	Next() *pool.Backend
-}
 
 type Director struct {
 	Strategy Strategy
@@ -24,12 +20,12 @@ func NewDirector(s Strategy, p *proxy.Proxy) *Director {
 	}
 }
 
-func (d *Director) SelectBackend() *pool.Backend {
+func (d *Director) SelectBackend() *backend.Backend {
 	target := d.Strategy.Next()
 	return target
 }
 
-func (d *Director) ProxyRequest(target *pool.Backend, r *http.Request) (*http.Response, error) {
+func (d *Director) ProxyRequest(target *backend.Backend, r *http.Request) (*http.Response, error) {
 	resp, err := d.Proxy.DoRequest(target, r)
 	if err != nil {
 		log.Errorf("proxy request failed for %s: %v", target.URL.Host, err)

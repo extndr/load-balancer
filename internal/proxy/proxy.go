@@ -7,11 +7,9 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/extndr/load-balancer/internal/backend"
 	"github.com/extndr/load-balancer/internal/config"
-	"github.com/extndr/load-balancer/internal/pool"
 	log "github.com/sirupsen/logrus"
-
-	httputil "github.com/extndr/load-balancer/internal/http"
 )
 
 type Proxy struct {
@@ -21,13 +19,13 @@ type Proxy struct {
 func NewProxy(timeout time.Duration, transportConfig config.HTTPTransportConfig) *Proxy {
 	return &Proxy{
 		Client: &http.Client{
-			Transport: httputil.NewTransport(transportConfig),
+			Transport: NewTransport(transportConfig),
 			Timeout:   timeout,
 		},
 	}
 }
 
-func (p *Proxy) DoRequest(b *pool.Backend, r *http.Request) (*http.Response, error) {
+func (p *Proxy) DoRequest(b *backend.Backend, r *http.Request) (*http.Response, error) {
 	target := &url.URL{
 		Scheme:   b.URL.Scheme,
 		Host:     b.URL.Host,

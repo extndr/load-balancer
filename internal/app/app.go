@@ -8,14 +8,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/extndr/load-balancer/internal/backend"
+	"github.com/extndr/load-balancer/internal/balancer"
 	"github.com/extndr/load-balancer/internal/config"
-	"github.com/extndr/load-balancer/internal/core"
 	"github.com/extndr/load-balancer/internal/health"
-	"github.com/extndr/load-balancer/internal/pool"
 	"github.com/extndr/load-balancer/internal/proxy"
+	"github.com/extndr/load-balancer/internal/server"
 	log "github.com/sirupsen/logrus"
-
-	httputil "github.com/extndr/load-balancer/internal/http"
 )
 
 type App struct {
@@ -26,7 +25,7 @@ type App struct {
 
 func New(cfg *config.Config) (*App, error) {
 	// Initialize pool
-	p, err := pool.NewPool(cfg.BackendURLs)
+	p, err := backend.NewPool(cfg.BackendURLs)
 	if err != nil {
 		return nil, err
 	}
@@ -37,19 +36,19 @@ func New(cfg *config.Config) (*App, error) {
 	log.Debugf("proxy client initialized with timeout=%v", cfg.ProxyTimeout)
 
 	// Initialize round-robin strategy
-	strategy := core.NewRoundRobin(p)
+	strategy := balancer.NewRoundRobin(p)
 	log.Debugf("round-robin strategy created")
 
 	// Initialize director
-	director := core.NewDirector(strategy, proxyClient)
+	director := balancer.NewDirector(strategy, proxyClient)
 	log.Debugf("director initialized")
 
 	// Initialize handler
-	handler := core.NewHandler(director)
+	handler := server.NewHandler(director)
 
 	// Initialize server
 	addr := ":" + cfg.Port
-	srv := httputil.NewServer(addr, handler)
+	srv := server.NewServer(addr, handler)
 
 	// Initialize health service
 	checker := health.NewChecker(cfg.HealthTimeout)

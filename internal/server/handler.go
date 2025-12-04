@@ -1,4 +1,4 @@
-package core
+package server
 
 import (
 	"context"
@@ -7,14 +7,15 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/extndr/load-balancer/internal/balancer"
 	log "github.com/sirupsen/logrus"
 )
 
 type Handler struct {
-	director *Director
+	director *balancer.Director
 }
 
-func NewHandler(director *Director) *Handler {
+func NewHandler(director *balancer.Director) *Handler {
 	return &Handler{
 		director: director,
 	}

@@ -1,21 +1,21 @@
 package health
 
 import (
-	"github.com/extndr/load-balancer/internal/pool"
+	"github.com/extndr/load-balancer/internal/backend"
 	log "github.com/sirupsen/logrus"
 )
 
 type Monitor struct {
-	pool *pool.Pool
+	pool *backend.Pool
 }
 
-func NewMonitor(pool *pool.Pool) *Monitor {
+func NewMonitor(pool *backend.Pool) *Monitor {
 	return &Monitor{
 		pool: pool,
 	}
 }
 
-func (m *Monitor) UpdateStatus(b *pool.Backend, alive bool) {
+func (m *Monitor) UpdateStatus(b *backend.Backend, alive bool) {
 	wasAlive := b.IsAlive()
 
 	if alive != wasAlive {

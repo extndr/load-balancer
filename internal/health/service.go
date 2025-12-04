@@ -3,20 +3,20 @@ package health
 import (
 	"time"
 
-	"github.com/extndr/load-balancer/internal/pool"
+	"github.com/extndr/load-balancer/internal/backend"
 	log "github.com/sirupsen/logrus"
 )
 
 type Service struct {
 	checker  *Checker
 	monitor  *Monitor
-	pool     *pool.Pool
+	pool     *backend.Pool
 	interval time.Duration
 	ticker   *time.Ticker
 	stopCh   chan struct{}
 }
 
-func NewService(checker *Checker, monitor *Monitor, pool *pool.Pool, interval time.Duration) *Service {
+func NewService(checker *Checker, monitor *Monitor, pool *backend.Pool, interval time.Duration) *Service {
 	return &Service{
 		checker:  checker,
 		monitor:  monitor,

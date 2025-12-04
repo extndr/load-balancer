@@ -1,23 +1,23 @@
-package core
+package balancer
 
 import (
 	"sync/atomic"
 
-	"github.com/extndr/load-balancer/internal/pool"
+	"github.com/extndr/load-balancer/internal/backend"
 )
 
 type RoundRobin struct {
 	counter  uint64
-	backends *pool.Pool
+	backends *backend.Pool
 }
 
-func NewRoundRobin(backends *pool.Pool) *RoundRobin {
+func NewRoundRobin(backends *backend.Pool) *RoundRobin {
 	return &RoundRobin{
 		backends: backends,
 	}
 }
 
-func (rr *RoundRobin) Next() *pool.Backend {
+func (rr *RoundRobin) Next() *backend.Backend {
 	alive := rr.backends.AliveBackends()
 	if len(alive) == 0 {
 		return nil

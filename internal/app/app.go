@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -18,9 +19,10 @@ import (
 )
 
 type App struct {
-	server  *http.Server
-	monitor *health.Monitor
-	errCh   chan error
+	server   *http.Server
+	pprofSrv *http.Server
+	monitor  *health.Monitor
+	errCh    chan error
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -54,15 +56,32 @@ func New(cfg *config.Config) (*App, error) {
 	monitor := health.NewMonitor(p, cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
 	log.Infof("health service initialized with timeout=%v, interval=%v", cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
 
+	// Initialize pprof server
+	pprofAddr := ":" + cfg.PprofPort
+	pprofSrv := &http.Server{
+		Addr:    pprofAddr,
+		Handler: http.DefaultServeMux,
+	}
+
 	return &App{
-		server:  srv,
-		monitor: monitor,
-		errCh:   make(chan error, 1),
+		server:   srv,
+		pprofSrv: pprofSrv,
+		monitor:  monitor,
+		errCh:    make(chan error, 1),
 	}, nil
 }
 
 func (a *App) Start() error {
 	go a.monitor.Start()
+
+	// Start pprof server in a separate goroutine
+	go func() {
+		log.Infof("starting pprof server on %s", a.pprofSrv.Addr)
+		if err := a.pprofSrv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Errorf("pprof server error: %v", err)
+		}
+	}()
+
 	log.Infof("starting load balancer on %s", a.server.Addr)
 	go a.waitForShutdown()
 
@@ -76,6 +95,14 @@ func (a *App) Start() error {
 
 func (a *App) Stop(ctx context.Context) error {
 	a.monitor.Stop()
+
+	// Shutdown pprof server with a shorter timeout
+	pprofCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := a.pprofSrv.Shutdown(pprofCtx); err != nil {
+		log.Errorf("pprof server shutdown error: %v", err)
+	}
 
 	if err := a.server.Shutdown(ctx); err != nil {
 		log.Errorf("server shutdown error: %v", err)

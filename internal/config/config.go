@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Port                string
+	PprofPort           string
 	BackendURLs         []string
 	ProxyTimeout        time.Duration
 	HealthCheckTimeout  time.Duration
@@ -25,6 +26,7 @@ type HTTPTransportConfig struct {
 func Load() *Config {
 	cfg := &Config{
 		Port:                getEnv("PORT", defaultPort),
+		PprofPort:           getEnv("PPROF_PORT", defaultPprofPort),
 		BackendURLs:         parseBackends(getEnv("BACKENDS", defaultBackends)),
 		ProxyTimeout:        parseDuration(getEnv("PROXY_TIMEOUT", defaultProxyTimeout)),
 		HealthCheckTimeout:  parseDuration(getEnv("HEALTH_CHECK_TIMEOUT", defaultHealthCheckTimeout)),

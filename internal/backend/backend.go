@@ -6,20 +6,20 @@ import (
 )
 
 type Backend struct {
-	URL   *url.URL
-	Alive atomic.Bool
+	URL     *url.URL
+	healthy atomic.Bool
 }
 
 func NewBackend(u *url.URL) *Backend {
 	b := &Backend{URL: u}
-	b.Alive.Store(true)
+	b.healthy.Store(true)
 	return b
 }
 
-func (b *Backend) SetAlive(alive bool) {
-	b.Alive.Store(alive)
+func (b *Backend) Healthy() bool {
+	return b.healthy.Load()
 }
 
-func (b *Backend) IsAlive() bool {
-	return b.Alive.Load()
+func (b *Backend) SetHealthy(status bool) {
+	b.healthy.Store(status)
 }

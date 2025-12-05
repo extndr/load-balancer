@@ -18,9 +18,9 @@ import (
 )
 
 type App struct {
-	server        *http.Server
-	healthService *health.Service
-	errCh         chan error
+	server  *http.Server
+	monitor *health.Monitor
+	errCh   chan error
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -50,21 +50,19 @@ func New(cfg *config.Config) (*App, error) {
 	addr := ":" + cfg.Port
 	srv := server.NewServer(addr, handler)
 
-	// Initialize health service
-	checker := health.NewChecker(cfg.HealthTimeout)
-	monitor := health.NewMonitor(p)
-	healthService := health.NewService(checker, monitor, p, cfg.HealthCheckInterval)
-	log.Infof("health service initialized with timeout=%v, interval=%v", cfg.HealthTimeout, cfg.HealthCheckInterval)
+	// Initialize health monitor
+	monitor := health.NewMonitor(p, cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
+	log.Infof("health service initialized with timeout=%v, interval=%v", cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
 
 	return &App{
-		server:        srv,
-		healthService: healthService,
-		errCh:         make(chan error, 1),
+		server:  srv,
+		monitor: monitor,
+		errCh:   make(chan error, 1),
 	}, nil
 }
 
 func (a *App) Start() error {
-	go a.healthService.Start()
+	go a.monitor.Start()
 	log.Infof("starting load balancer on %s", a.server.Addr)
 	go a.waitForShutdown()
 
@@ -77,7 +75,7 @@ func (a *App) Start() error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
-	a.healthService.Stop()
+	a.monitor.Stop()
 
 	if err := a.server.Shutdown(ctx); err != nil {
 		log.Errorf("server shutdown error: %v", err)

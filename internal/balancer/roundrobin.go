@@ -18,11 +18,11 @@ func NewRoundRobin(backends *backend.Pool) *RoundRobin {
 }
 
 func (rr *RoundRobin) Next() *backend.Backend {
-	alive := rr.backends.AliveBackends()
-	if len(alive) == 0 {
+	healthy := rr.backends.GetHealthy()
+	if len(healthy) == 0 {
 		return nil
 	}
 	idx := atomic.AddUint64(&rr.counter, 1) - 1
-	selected := alive[idx%uint64(len(alive))]
+	selected := healthy[idx%uint64(len(healthy))]
 	return selected
 }

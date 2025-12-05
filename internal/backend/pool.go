@@ -30,16 +30,16 @@ func NewPool(urls []string) (*Pool, error) {
 	return &Pool{backends: backends}, nil
 }
 
-func (p *Pool) AliveBackends() []*Backend {
-	var alive []*Backend
+func (p *Pool) GetHealthy() []*Backend {
+	var healthy []*Backend
 	for _, b := range p.backends {
-		if b.IsAlive() {
-			alive = append(alive, b)
+		if b.Healthy() {
+			healthy = append(healthy, b)
 		}
 	}
-	return alive
+	return healthy
 }
 
-func (p *Pool) AllBackends() []*Backend {
+func (p *Pool) GetAll() []*Backend {
 	return p.backends
 }

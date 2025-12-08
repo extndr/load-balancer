@@ -41,6 +41,9 @@ func (p *Proxy) DoRequest(b *backend.Backend, r *http.Request) (*http.Response, 
 
 	req.Header = r.Header.Clone()
 
+	removeHopByHopHeaders(req.Header)
+	addForwardedHeaders(req, r)
+
 	resp, err := p.Client.Do(req)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
@@ -50,6 +53,8 @@ func (p *Proxy) DoRequest(b *backend.Backend, r *http.Request) (*http.Response, 
 		}
 		return nil, err
 	}
+
+	removeHopByHopHeaders(resp.Header)
 
 	return resp, nil
 }

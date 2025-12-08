@@ -5,7 +5,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/extndr/load-balancer/internal/balancer"
 	log "github.com/sirupsen/logrus"
@@ -22,32 +21,20 @@ func NewHandler(director *balancer.Director) *Handler {
 }
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	log.Debugf("incoming request: %s %s from %s", r.Method, r.RequestURI, r.RemoteAddr)
-
 	target := h.director.SelectBackend()
 	if target == nil {
-		log.Errorf("no available backends for request %s %s", r.Method, r.RequestURI)
-		http.Error(w, "No alive backends", http.StatusServiceUnavailable)
+		http.Error(w, "Service temporary unavailable", http.StatusServiceUnavailable)
 		return
 	}
 
-	start := time.Now()
-	resp, err := h.director.ProxyRequest(target, r)
-	elapsed := time.Since(start).Milliseconds()
+	r.Header.Set("X-Backend", target.URL.Host)
 
+	resp, err := h.director.ProxyRequest(target, r)
 	if err != nil {
 		http.Error(w, "Bad gateway", http.StatusBadGateway)
 		return
 	}
-
 	defer resp.Body.Close()
-
-	log.Infof("%s → %s %d %dms",
-		r.Method,
-		target.URL.Host,
-		resp.StatusCode,
-		elapsed,
-	)
 
 	// Copy response headers
 	for k, v := range resp.Header {

@@ -12,6 +12,7 @@ import (
 	"github.com/extndr/load-balancer/internal/balancer"
 	"github.com/extndr/load-balancer/internal/config"
 	"github.com/extndr/load-balancer/internal/health"
+	"github.com/extndr/load-balancer/internal/middleware"
 	"github.com/extndr/load-balancer/internal/proxy"
 	"github.com/extndr/load-balancer/internal/server"
 	log "github.com/sirupsen/logrus"
@@ -24,35 +25,18 @@ type App struct {
 }
 
 func New(cfg *config.Config) (*App, error) {
-	// Initialize pool
 	p, err := backend.NewPool(cfg.BackendURLs)
 	if err != nil {
 		return nil, err
 	}
-	log.Infof("initialized pool with %d backends", len(cfg.BackendURLs))
 
-	// Initialize proxy
 	proxyClient := proxy.NewProxy(cfg.ProxyTimeout, cfg.HTTPTransport)
-	log.Debugf("proxy client initialized with timeout=%v", cfg.ProxyTimeout)
-
-	// Initialize round-robin strategy
 	strategy := balancer.NewRoundRobin(p)
-	log.Debugf("round-robin strategy created")
-
-	// Initialize director
 	director := balancer.NewDirector(strategy, proxyClient)
-	log.Debugf("director initialized")
-
-	// Initialize handler
-	handler := server.NewHandler(director)
-
-	// Initialize server
-	addr := ":" + cfg.Port
-	srv := server.NewServer(addr, handler)
-
-	// Initialize health monitor
 	monitor := health.NewMonitor(p, cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
-	log.Infof("health service initialized with timeout=%v, interval=%v", cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
+	handler := server.NewHandler(director)
+	chain := middleware.Chain(handler, middleware.Logging())
+	srv := server.NewServer(":"+cfg.Port, chain)
 
 	return &App{
 		server:  srv,

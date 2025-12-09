@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -21,7 +20,6 @@ import (
 type App struct {
 	server  *http.Server
 	monitor *health.Monitor
-	errCh   chan error
 }
 
 func New(cfg *config.Config) (*App, error) {
@@ -41,48 +39,50 @@ func New(cfg *config.Config) (*App, error) {
 	return &App{
 		server:  srv,
 		monitor: monitor,
-		errCh:   make(chan error, 1),
 	}, nil
 }
 
-func (a *App) Start() error {
-	go a.monitor.Start()
-	log.Infof("starting load balancer on %s", a.server.Addr)
-	go a.waitForShutdown()
+func (a *App) Run() error {
+	serverErr := make(chan error, 1)
 
-	if err := a.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+	log.Infof("starting load balancer on %s", a.server.Addr)
+	go func() {
+		err := a.server.ListenAndServe()
+		if err != nil && err != http.ErrServerClosed {
+			serverErr <- err
+		}
+	}()
+
+	go a.monitor.Start()
+
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	select {
+	case <-ctx.Done():
+		log.Infof("received shutdown signal")
+	case err := <-serverErr:
 		log.Errorf("server error: %v", err)
-		a.errCh <- err
+		a.monitor.Stop()
+		return err
 	}
 
-	return <-a.errCh
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	return a.Stop(shutdownCtx)
 }
 
 func (a *App) Stop(ctx context.Context) error {
+	log.Infof("stopping health monitor")
 	a.monitor.Stop()
 
+	log.Infof("shutting down server")
 	if err := a.server.Shutdown(ctx); err != nil {
 		log.Errorf("server shutdown error: %v", err)
 		return err
 	}
 
-	log.Infof("server gracefully shutdown")
+	log.Info("server gracefully shutdown")
 	return nil
-}
-
-func (a *App) waitForShutdown() {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-
-	sig := <-sigChan
-	log.Infof("received signal: %v, initiating graceful shutdown", sig)
-
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	if err := a.Stop(ctx); err != nil {
-		a.errCh <- err
-	} else {
-		a.errCh <- nil
-	}
 }

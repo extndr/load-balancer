@@ -19,7 +19,7 @@ func main() {
 		log.Fatalf("failed to initialize app: %v", err)
 	}
 
-	if err := application.Start(); err != nil {
+	if err := application.Run(); err != nil {
 		log.Fatalf("server failed: %v", err)
 	}
 }

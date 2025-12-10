@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/extndr/load-balancer/internal/backend"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 type Monitor struct {
@@ -13,21 +13,23 @@ type Monitor struct {
 	pool     *backend.Pool
 	interval time.Duration
 	stopCh   chan struct{}
+	logger   *zap.Logger
 }
 
-func NewMonitor(pool *backend.Pool, timeout, interval time.Duration) *Monitor {
+func NewMonitor(pool *backend.Pool, timeout, interval time.Duration, logger *zap.Logger) *Monitor {
 	return &Monitor{
 		client:   &http.Client{Timeout: timeout},
 		pool:     pool,
 		interval: interval,
 		stopCh:   make(chan struct{}),
+		logger:   logger,
 	}
 }
 
 // Start begins periodic health checks
 func (m *Monitor) Start() {
 	ticker := time.NewTicker(m.interval)
-	log.Infof("health monitor started, checking every %v", m.interval)
+	m.logger.Info("health monitor started", zap.Duration("interval", m.interval))
 
 	for {
 		select {
@@ -35,7 +37,7 @@ func (m *Monitor) Start() {
 			m.checkBackends()
 		case <-m.stopCh:
 			ticker.Stop()
-			log.Info("health monitor stopped")
+			m.logger.Info("health monitor stopped")
 			return
 		}
 	}
@@ -56,21 +58,29 @@ func (m *Monitor) checkBackends() {
 		}
 
 		// true if backend responded with 2xx or 3xx, false otherwise
-		newStatus := resp.StatusCode >= 200 && resp.StatusCode < 400
-		m.updateStatus(b, newStatus)
+		healthy := resp.StatusCode >= 200 && resp.StatusCode < 400
+		m.updateStatus(b, healthy)
 
 		resp.Body.Close()
 	}
 }
 
 // updateStatus updates backend status and logs changes
-func (m *Monitor) updateStatus(b *backend.Backend, newStatus bool) {
-	if b.Healthy() != newStatus {
-		b.SetHealthy(newStatus)
-		if !newStatus {
-			log.Warnf("backend %s is now DOWN", b.URL.Host)
-			return
+func (m *Monitor) updateStatus(b *backend.Backend, healthy bool) {
+	if b.Healthy() != healthy {
+		b.SetHealthy(healthy)
+
+		status := "healthy"
+		level := m.logger.Info
+		if !healthy {
+			status = "unhealthy"
+			level = m.logger.Warn
 		}
-		log.Infof("backend %s is now UP", b.URL.Host)
+
+		level("backend health status changed",
+			zap.String("backend", b.URL.Host),
+			zap.String("url", b.URL.String()),
+			zap.String("status", status),
+		)
 	}
 }

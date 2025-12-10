@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -14,38 +15,47 @@ import (
 	"github.com/extndr/load-balancer/internal/middleware"
 	"github.com/extndr/load-balancer/internal/proxy"
 	"github.com/extndr/load-balancer/internal/server"
-	log "github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 type App struct {
 	server  *http.Server
 	monitor *health.Monitor
+	logger  *zap.Logger
 }
 
-func New(cfg *config.Config) (*App, error) {
-	p, err := backend.NewPool(cfg.BackendURLs)
+func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
+	bpool, err := backend.NewPool(cfg.BackendURLs)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create backend pool: %w", err)
 	}
 
-	proxyClient := proxy.NewProxy(cfg.ProxyTimeout, cfg.HTTPTransport)
-	strategy := balancer.NewRoundRobin(p)
-	director := balancer.NewDirector(strategy, proxyClient)
-	monitor := health.NewMonitor(p, cfg.HealthCheckTimeout, cfg.HealthCheckInterval)
-	handler := server.NewHandler(director)
-	chain := middleware.Chain(handler, middleware.Logging())
+	rproxy := proxy.NewProxy(cfg.ProxyTimeout, cfg.HTTPTransport)
+	strategy := balancer.NewRoundRobin(bpool)
+	director := balancer.NewDirector(strategy)
+	monitor := health.NewMonitor(
+		bpool,
+		cfg.HealthCheckTimeout,
+		cfg.HealthCheckInterval,
+		logger,
+	)
+
+	handler := server.NewHandler(director, rproxy)
+	chain := middleware.Chain(handler, middleware.Logging(logger))
+
 	srv := server.NewServer(":"+cfg.Port, chain)
 
 	return &App{
 		server:  srv,
 		monitor: monitor,
+		logger:  logger,
 	}, nil
 }
 
 func (a *App) Run() error {
 	serverErr := make(chan error, 1)
 
-	log.Infof("starting load balancer on %s", a.server.Addr)
+	a.logger.Info("starting load balancer", zap.String("addr", a.server.Addr))
 	go func() {
 		err := a.server.ListenAndServe()
 		if err != nil && err != http.ErrServerClosed {
@@ -60,9 +70,9 @@ func (a *App) Run() error {
 
 	select {
 	case <-ctx.Done():
-		log.Infof("received shutdown signal")
+		a.logger.Info("received shutdown signal")
 	case err := <-serverErr:
-		log.Errorf("server error: %v", err)
+		a.logger.Error("server error", zap.Error(err))
 		a.monitor.Stop()
 		return err
 	}
@@ -74,15 +84,15 @@ func (a *App) Run() error {
 }
 
 func (a *App) Stop(ctx context.Context) error {
-	log.Infof("stopping health monitor")
+	a.logger.Info("stopping health monitor")
 	a.monitor.Stop()
 
-	log.Infof("shutting down server")
+	a.logger.Info("shutting down server")
 	if err := a.server.Shutdown(ctx); err != nil {
-		log.Errorf("server shutdown error: %v", err)
+		a.logger.Error("server shutdown error", zap.Error(err))
 		return err
 	}
 
-	log.Info("server gracefully shutdown")
+	a.logger.Info("server gracefully shutdown")
 	return nil
 }

@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Pool struct {
@@ -21,7 +19,6 @@ func NewPool(urls []string) (*Pool, error) {
 	for _, s := range urls {
 		u, err := url.Parse(s)
 		if err != nil {
-			log.Errorf("failed to parse backend URL %q: %v", s, err)
 			return nil, fmt.Errorf("invalid backend URL %q: %w", s, err)
 		}
 		backends = append(backends, NewBackend(u))

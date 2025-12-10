@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func parseBackends(raw string) []string {
@@ -21,7 +19,6 @@ func parseBackends(raw string) []string {
 func parseDuration(raw string) time.Duration {
 	d, err := time.ParseDuration(raw)
 	if err != nil {
-		log.Warnf("invalid duration %q, using default 10s", raw)
 		return 10 * time.Second
 	}
 	return d
@@ -30,7 +27,6 @@ func parseDuration(raw string) time.Duration {
 func parseInt(raw string) int {
 	i, err := strconv.Atoi(raw)
 	if err != nil {
-		log.Warnf("invalid int %q, using default 30", raw)
 		return 30
 	}
 	return i

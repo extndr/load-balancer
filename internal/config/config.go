@@ -3,8 +3,6 @@ package config
 import (
 	"os"
 	"time"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Config struct {
@@ -13,7 +11,8 @@ type Config struct {
 	ProxyTimeout        time.Duration
 	HealthCheckTimeout  time.Duration
 	HealthCheckInterval time.Duration
-	HTTPTransport       HTTPTransportConfig
+
+	HTTPTransport HTTPTransportConfig
 }
 
 type HTTPTransportConfig struct {
@@ -36,8 +35,6 @@ func Load() *Config {
 		MaxIdleConnsPerHost: parseInt(getEnv("HTTP_MAX_IDLE_CONNS_PER_HOST", defaultMaxIdleConnsPerHost)),
 		IdleConnTimeout:     parseDuration(getEnv("HTTP_IDLE_CONN_TIMEOUT", defaultIdleConnTimeout)),
 	}
-
-	log.Debugf("config loaded: %+v", cfg)
 	return cfg
 }
 

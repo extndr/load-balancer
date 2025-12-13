@@ -28,7 +28,7 @@ func NewPool(urls []string) (*Pool, error) {
 }
 
 func (p *Pool) GetHealthy() []*Backend {
-	var healthy []*Backend
+	healthy := make([]*Backend, 0, len(p.backends))
 	for _, b := range p.backends {
 		if b.Healthy() {
 			healthy = append(healthy, b)

@@ -25,16 +25,16 @@ type App struct {
 }
 
 func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
-	bpool, err := backend.NewPool(cfg.BackendURLs)
+	pool, err := backend.NewPool(cfg.BackendURLs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create backend pool: %w", err)
 	}
 
 	rproxy := proxy.NewProxy(cfg.ProxyTimeout, cfg.HTTPTransport)
-	strategy := balancer.NewRoundRobin(bpool)
-	director := balancer.NewDirector(strategy)
+	strategy := balancer.NewRoundRobin()
+	director := balancer.NewDirector(pool, strategy)
 	monitor := health.NewMonitor(
-		bpool,
+		pool,
 		cfg.HealthCheckTimeout,
 		cfg.HealthCheckInterval,
 		logger,

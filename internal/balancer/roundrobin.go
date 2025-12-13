@@ -7,22 +7,14 @@ import (
 )
 
 type RoundRobin struct {
-	counter  uint64
-	backends *backend.Pool
+	counter uint64
 }
 
-func NewRoundRobin(backends *backend.Pool) *RoundRobin {
-	return &RoundRobin{
-		backends: backends,
-	}
+func NewRoundRobin() *RoundRobin {
+	return &RoundRobin{}
 }
 
-func (rr *RoundRobin) Next() *backend.Backend {
-	healthy := rr.backends.GetHealthy()
-	if len(healthy) == 0 {
-		return nil
-	}
-	idx := atomic.AddUint64(&rr.counter, 1) - 1
-	selected := healthy[idx%uint64(len(healthy))]
-	return selected
+func (rr *RoundRobin) Next(backends []*backend.Backend) *backend.Backend {
+	n := atomic.AddUint64(&rr.counter, 1) - 1
+	return backends[n%uint64(len(backends))]
 }

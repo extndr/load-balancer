@@ -5,15 +5,21 @@ import (
 )
 
 type Director struct {
+	pool     *backend.Pool
 	strategy Strategy
 }
 
-func NewDirector(strategy Strategy) *Director {
+func NewDirector(pool *backend.Pool, strategy Strategy) *Director {
 	return &Director{
+		pool:     pool,
 		strategy: strategy,
 	}
 }
 
 func (d *Director) SelectBackend() *backend.Backend {
-	return d.strategy.Next()
+	healthy := d.pool.GetHealthy()
+	if len(healthy) == 0 {
+		return nil
+	}
+	return d.strategy.Next(healthy)
 }

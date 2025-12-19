@@ -1,22 +1,20 @@
 package balancer
 
-import (
-	"github.com/extndr/load-balancer/internal/backend"
-)
+import "github.com/extndr/load-balancer/internal/pool"
 
 type Director struct {
-	pool     *backend.Pool
+	pool     *pool.Pool
 	strategy Strategy
 }
 
-func NewDirector(pool *backend.Pool, strategy Strategy) *Director {
+func NewDirector(pool *pool.Pool, strategy Strategy) *Director {
 	return &Director{
 		pool:     pool,
 		strategy: strategy,
 	}
 }
 
-func (d *Director) SelectBackend() *backend.Backend {
+func (d *Director) SelectBackend() *pool.Backend {
 	healthy := d.pool.GetHealthy()
 	if len(healthy) == 0 {
 		return nil

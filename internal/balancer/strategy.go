@@ -1,7 +1,7 @@
 package balancer
 
-import "github.com/extndr/load-balancer/internal/backend"
+import "github.com/extndr/load-balancer/internal/pool"
 
 type Strategy interface {
-	Next(backends []*backend.Backend) *backend.Backend
+	Next(backends []*pool.Backend) *pool.Backend
 }

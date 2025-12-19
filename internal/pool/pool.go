@@ -1,4 +1,4 @@
-package backend
+package pool
 
 import (
 	"errors"
@@ -39,13 +39,13 @@ func (p *Pool) GetAll() []*Backend {
 	return p.backends
 }
 
-// UpdateHealth updates the health status of a backend
-// and refreshes the cached list of healthy backends.
+// UpdateHealth sets the backend's health and updates the cached healthy list.
 func (p *Pool) UpdateHealth(b *Backend, healthy bool) {
 	b.setHealthy(healthy)
 	p.updateCache()
 }
 
+// updateCache rebuilds the list of healthy backends in the cache.
 func (p *Pool) updateCache() {
 	healthy := make([]*Backend, 0, len(p.backends))
 	for _, b := range p.backends {

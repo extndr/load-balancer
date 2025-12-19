@@ -4,19 +4,19 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/extndr/load-balancer/internal/backend"
+	"github.com/extndr/load-balancer/internal/pool"
 	"go.uber.org/zap"
 )
 
 type Monitor struct {
 	client   *http.Client
-	pool     *backend.Pool
+	pool     *pool.Pool
 	interval time.Duration
 	stopCh   chan struct{}
 	logger   *zap.Logger
 }
 
-func NewMonitor(pool *backend.Pool, timeout, interval time.Duration, logger *zap.Logger) *Monitor {
+func NewMonitor(pool *pool.Pool, timeout, interval time.Duration, logger *zap.Logger) *Monitor {
 	return &Monitor{
 		client:   &http.Client{Timeout: timeout},
 		pool:     pool,
@@ -68,7 +68,7 @@ func (m *Monitor) check() {
 
 // updateStatus updates a backend in the pool if its health has changed
 // and logs the update.
-func (m *Monitor) updateStatus(b *backend.Backend, newStatus bool) {
+func (m *Monitor) updateStatus(b *pool.Backend, newStatus bool) {
 	if b.Healthy() != newStatus {
 		m.pool.UpdateHealth(b, newStatus)
 

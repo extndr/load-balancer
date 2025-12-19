@@ -8,11 +8,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/extndr/load-balancer/internal/backend"
 	"github.com/extndr/load-balancer/internal/balancer"
 	"github.com/extndr/load-balancer/internal/config"
 	"github.com/extndr/load-balancer/internal/health"
 	"github.com/extndr/load-balancer/internal/middleware"
+	"github.com/extndr/load-balancer/internal/pool"
 	"github.com/extndr/load-balancer/internal/proxy"
 	"github.com/extndr/load-balancer/internal/server"
 	"go.uber.org/zap"
@@ -25,7 +25,7 @@ type App struct {
 }
 
 func New(cfg *config.Config, logger *zap.Logger) (*App, error) {
-	pool, err := backend.NewPool(cfg.BackendURLs)
+	pool, err := pool.NewPool(cfg.BackendURLs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create backend pool: %w", err)
 	}

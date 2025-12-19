@@ -34,7 +34,7 @@ func (m *Monitor) Start() {
 	for {
 		select {
 		case <-ticker.C:
-			m.checkBackends()
+			m.check()
 		case <-m.stopCh:
 			ticker.Stop()
 			m.logger.Info("health monitor stopped")
@@ -48,8 +48,9 @@ func (m *Monitor) Stop() {
 	close(m.stopCh)
 }
 
-// checkBackends checks all backends and updates their status
-func (m *Monitor) checkBackends() {
+// check performs a health check on all backends
+// and updates their status in the pool.
+func (m *Monitor) check() {
 	for _, b := range m.pool.GetAll() {
 		resp, err := m.client.Get(b.URL.String())
 		if err != nil {
@@ -65,14 +66,15 @@ func (m *Monitor) checkBackends() {
 	}
 }
 
-// updateStatus updates backend status and logs changes
-func (m *Monitor) updateStatus(b *backend.Backend, healthy bool) {
-	if b.Healthy() != healthy {
-		b.SetHealthy(healthy)
+// updateStatus updates a backend in the pool if its health has changed
+// and logs the update.
+func (m *Monitor) updateStatus(b *backend.Backend, newStatus bool) {
+	if b.Healthy() != newStatus {
+		m.pool.UpdateHealth(b, newStatus)
 
 		status := "healthy"
 		level := m.logger.Info
-		if !healthy {
+		if !newStatus {
 			status = "unhealthy"
 			level = m.logger.Warn
 		}

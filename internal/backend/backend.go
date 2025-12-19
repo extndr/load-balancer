@@ -20,6 +20,6 @@ func (b *Backend) Healthy() bool {
 	return b.healthy.Load()
 }
 
-func (b *Backend) SetHealthy(status bool) {
-	b.healthy.Store(status)
+func (b *Backend) setHealthy(healthy bool) {
+	b.healthy.Store(healthy)
 }

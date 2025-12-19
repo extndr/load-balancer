@@ -4,10 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync/atomic"
 )
 
 type Pool struct {
 	backends []*Backend
+	cache    atomic.Value
 }
 
 func NewPool(urls []string) (*Pool, error) {
@@ -24,19 +26,32 @@ func NewPool(urls []string) (*Pool, error) {
 		backends = append(backends, NewBackend(u))
 	}
 
-	return &Pool{backends: backends}, nil
+	p := &Pool{backends: backends}
+	p.updateCache()
+	return p, nil
 }
 
 func (p *Pool) GetHealthy() []*Backend {
+	return p.cache.Load().([]*Backend)
+}
+
+func (p *Pool) GetAll() []*Backend {
+	return p.backends
+}
+
+// UpdateHealth updates the health status of a backend
+// and refreshes the cached list of healthy backends.
+func (p *Pool) UpdateHealth(b *Backend, healthy bool) {
+	b.setHealthy(healthy)
+	p.updateCache()
+}
+
+func (p *Pool) updateCache() {
 	healthy := make([]*Backend, 0, len(p.backends))
 	for _, b := range p.backends {
 		if b.Healthy() {
 			healthy = append(healthy, b)
 		}
 	}
-	return healthy
-}
-
-func (p *Pool) GetAll() []*Backend {
-	return p.backends
+	p.cache.Store(healthy)
 }

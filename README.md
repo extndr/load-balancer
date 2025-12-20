@@ -67,7 +67,7 @@ func (rr *RoundRobin) Next(backends []*pool.Backend) *pool.Backend {
 
 Thread-safe with atomic operations, distributes evenly across healthy backends. Easy to extend with other strategies.
 
-## Quic Start
+## Quick Start
 
 ### Using Docker Compose (Recommended)
 

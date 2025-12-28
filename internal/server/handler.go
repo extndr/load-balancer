@@ -13,13 +13,13 @@ import (
 )
 
 type Handler struct {
-	director *balancer.Director
+	balancer *balancer.Balancer
 	proxy    *proxy.Proxy
 }
 
-func NewHandler(director *balancer.Director, proxy *proxy.Proxy) *Handler {
+func NewHandler(balancer *balancer.Balancer, proxy *proxy.Proxy) *Handler {
 	return &Handler{
-		director: director,
+		balancer: balancer,
 		proxy:    proxy,
 	}
 }
@@ -27,7 +27,7 @@ func NewHandler(director *balancer.Director, proxy *proxy.Proxy) *Handler {
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	logger := middleware.Logger(r.Context())
 
-	target := h.director.SelectBackend()
+	target := h.balancer.NextBackend()
 	if target == nil {
 		logger.Warn("no healthy backend available")
 		http.Error(w, "Service temporarily unavailable", http.StatusServiceUnavailable)

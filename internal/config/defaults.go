@@ -4,6 +4,7 @@ const (
 	defaultPort                = "8080"
 	defaultBackends            = "http://localhost:8081,http://localhost:8082,http://localhost:8083"
 	defaultProxyTimeout        = "10s"
+	defaultEnableHealthCheck   = "true"
 	defaultHealthCheckTimeout  = "1s"
 	defaultHealthCheckInterval = "30s"
 )

@@ -31,3 +31,11 @@ func parseInt(raw string) int {
 	}
 	return i
 }
+
+func parseBool(raw string) bool {
+	b, err := strconv.ParseBool(raw)
+	if err != nil {
+		return true
+	}
+	return b
+}

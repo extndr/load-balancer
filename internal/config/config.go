@@ -9,6 +9,7 @@ type Config struct {
 	Port                string
 	BackendURLs         []string
 	ProxyTimeout        time.Duration
+	EnableHealthCheck   bool
 	HealthCheckTimeout  time.Duration
 	HealthCheckInterval time.Duration
 
@@ -26,6 +27,7 @@ func Load() *Config {
 		Port:                getEnv("PORT", defaultPort),
 		BackendURLs:         parseBackends(getEnv("BACKENDS", defaultBackends)),
 		ProxyTimeout:        parseDuration(getEnv("PROXY_TIMEOUT", defaultProxyTimeout)),
+		EnableHealthCheck:   parseBool(getEnv("ENABLE_HEALTH_CHECK", defaultEnableHealthCheck)),
 		HealthCheckTimeout:  parseDuration(getEnv("HEALTH_CHECK_TIMEOUT", defaultHealthCheckTimeout)),
 		HealthCheckInterval: parseDuration(getEnv("HEALTH_CHECK_INTERVAL", defaultHealthCheckInterval)),
 	}
